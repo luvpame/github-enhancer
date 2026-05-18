@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import {
   HTML_PREVIEW_BUTTON_CLASS,
   HTML_PREVIEW_PANEL_CLASS,
+  HTML_PREVIEW_STYLE_ID,
   buildBlobUrlFromRawUrl,
   buildRawUrl,
   buildRawUrlFromBlobUrl,
@@ -122,6 +123,19 @@ describe("github-html-preview", () => {
     expect(
       document.querySelector(`[class*="file-path-section"] > ${PREVIEW_BUTTON_SELECTOR}`),
     ).not.toBeNull();
+  });
+
+  it("styles preview iframes to use most of the viewport height", () => {
+    ensureHtmlPreviewButtons(document, {
+      owner: "luvpame",
+      repo: "demo",
+      ref: "abc123",
+      fetchHtml: vi.fn(),
+    });
+
+    expect(document.getElementById(HTML_PREVIEW_STYLE_ID)?.textContent).toContain(
+      "height: calc(100vh - 160px);",
+    );
   });
 
   it("replaces React diff bodies with previews", async () => {

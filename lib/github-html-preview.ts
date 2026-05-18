@@ -229,7 +229,8 @@ const ensureHtmlPreviewStyle = (doc: Document): void => {
 
     .${HTML_PREVIEW_PANEL_CLASS} iframe {
       width: 100%;
-      min-height: 360px;
+      height: calc(100vh - 160px);
+      min-height: 640px;
       border: 1px solid var(--borderColor-default, #d0d7de);
       border-radius: 6px;
       background: #ffffff;
