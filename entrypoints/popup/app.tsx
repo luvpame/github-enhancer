@@ -1,112 +1,73 @@
-import { useState } from "react";
-import { browser } from "wxt/browser";
+import { useEffect, useState } from "react";
 
 import { extensionDescription, extensionName } from "../../lib/github-enhancer-metadata";
-import { pingBackground, type GithubEnhancerPongMessage } from "../../lib/github-enhancer-protocol";
+import {
+  DEFAULT_SETTINGS,
+  getSettings,
+  saveExtensionSettings,
+  type EnhancerSettings,
+} from "../../lib/settings";
 
-type PingState =
-  | {
-      status: "idle" | "loading";
-      detail: string;
-    }
-  | {
-      status: "success";
-      detail: string;
-      response: GithubEnhancerPongMessage;
-    }
-  | {
-      status: "error";
-      detail: string;
-    };
+interface ToggleItem {
+  key: keyof EnhancerSettings;
+  label: string;
+  description: string;
+}
 
-const initialState: PingState = {
-  status: "idle",
-  detail: "Use the button below to verify that popup and background are wired.",
-};
-
-const formatSuccess = (response: GithubEnhancerPongMessage): string =>
-  `Connected to ${response.browser} (MV${response.manifestVersion}).`;
-
-const getErrorMessage = (error: unknown): string => {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "The popup could not reach the background script.";
-};
-
-const getButtonLabel = (status: PingState["status"]): string => {
-  if (status === "loading") {
-    return "Connecting...";
-  }
-
-  return "Ping background";
-};
-
-const renderResponse = (state: PingState) => {
-  if (!("response" in state)) {
-    return undefined;
-  }
-
-  return (
-    <dl className="status__meta">
-      <div>
-        <dt>Browser</dt>
-        <dd>{state.response.browser}</dd>
-      </div>
-      <div>
-        <dt>Manifest</dt>
-        <dd>MV{state.response.manifestVersion}</dd>
-      </div>
-    </dl>
-  );
-};
+export const getToggleItems = (): ToggleItem[] => [
+  {
+    key: "prCopyEnabled",
+    label: "PR copy",
+    description: "Add Title, Url, and Textlink copy buttons to pull requests.",
+  },
+  {
+    key: "htmlPreviewEnabled",
+    label: "HTML preview",
+    description: "Add Preview HTML buttons to changed HTML files.",
+  },
+];
 
 const App = () => {
-  const [state, setState] = useState<PingState>(initialState);
+  const [settings, setSettings] = useState<EnhancerSettings>(DEFAULT_SETTINGS);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handlePing = async (): Promise<void> => {
-    setState({
-      status: "loading",
-      detail: "Checking the background connection...",
+  useEffect(() => {
+    void getSettings().then((nextSettings) => {
+      setSettings(nextSettings);
+      setIsLoading(false);
     });
+  }, []);
 
-    try {
-      const response = await pingBackground(browser.runtime);
-      setState({
-        status: "success",
-        detail: formatSuccess(response),
-        response,
-      });
-    } catch (error) {
-      setState({
-        status: "error",
-        detail: getErrorMessage(error),
-      });
-    }
+  const updateSetting = async (key: keyof EnhancerSettings, checked: boolean): Promise<void> => {
+    const nextSettings = { ...settings, [key]: checked };
+    setSettings(nextSettings);
+    await saveExtensionSettings({ [key]: checked });
   };
 
   return (
     <main className="popup-shell">
       <section className="card">
-        <p className="eyebrow">WXT + React</p>
+        <p className="eyebrow">GitHub tools</p>
         <h1>{extensionName}</h1>
         <p className="description">{extensionDescription}</p>
-        <div className={`status status--${state.status}`}>
-          <span className="status__label">Status</span>
-          <p>{state.detail}</p>
-          {renderResponse(state)}
+        <div className="toggle-list" aria-busy={isLoading}>
+          {getToggleItems().map((item) => (
+            <label className="toggle-row" key={item.key}>
+              <span>
+                <span className="toggle-label">{item.label}</span>
+                <span className="toggle-description">{item.description}</span>
+              </span>
+              <input
+                type="checkbox"
+                checked={settings[item.key]}
+                disabled={isLoading}
+                onChange={(event) => {
+                  void updateSetting(item.key, event.currentTarget.checked);
+                }}
+              />
+            </label>
+          ))}
         </div>
-        <button
-          className="primary-button"
-          type="button"
-          onClick={() => {
-            void handlePing();
-          }}
-          disabled={state.status === "loading"}
-        >
-          {getButtonLabel(state.status)}
-        </button>
       </section>
     </main>
   );
