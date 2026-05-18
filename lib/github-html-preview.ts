@@ -12,7 +12,7 @@ export interface RawUrlInput {
 export interface HtmlPreviewContext {
   owner: string;
   repo: string;
-  ref: string;
+  ref?: string;
   fetchHtml?: (url: string) => Promise<string>;
 }
 
@@ -20,9 +20,10 @@ export interface ChangedFile {
   element: HTMLElement;
   header: HTMLElement;
   path: string;
+  ref?: string;
 }
 
-const FILE_SELECTORS = ["[data-testid='file']", ".file"] as const;
+const FILE_SELECTORS = ["[data-file-path]", "[data-testid='file']", ".file"] as const;
 
 const defaultFetchHtml = async (url: string): Promise<string> => {
   const response = await fetch(url);
@@ -46,6 +47,15 @@ const getFilePath = (element: HTMLElement): string => {
   return titledLink?.getAttribute("title")?.trim() ?? "";
 };
 
+const getFileRef = (element: HTMLElement, path: string): string | undefined => {
+  const blobLink = Array.from(
+    element.querySelectorAll<HTMLAnchorElement>("a[href*='/blob/']"),
+  ).find((link) => link.pathname.endsWith(`/${path}`));
+  const [, ref] = blobLink?.pathname.match(/\/blob\/([^/]+)\//) ?? [];
+
+  return ref;
+};
+
 export const findChangedFiles = (doc: Document = document): ChangedFile[] => {
   const elements = FILE_SELECTORS.flatMap((selector) =>
     Array.from(doc.querySelectorAll<HTMLElement>(selector)),
@@ -58,7 +68,7 @@ export const findChangedFiles = (doc: Document = document): ChangedFile[] => {
       element.querySelector<HTMLElement>(".file-header") ??
       element.querySelector<HTMLElement>("[data-testid='file-header']");
 
-    return path && header ? [{ element, header, path }] : [];
+    return path && header ? [{ element, header, path, ref: getFileRef(element, path) }] : [];
   });
 };
 
@@ -135,10 +145,16 @@ const loadPreview = async (
     return;
   }
 
+  const ref = context.ref ?? file.ref;
+  if (!ref) {
+    file.element.appendChild(renderMessage(doc, "Could not resolve HTML preview source."));
+    return;
+  }
+
   const rawUrl = buildRawUrl({
     owner: context.owner,
     repo: context.repo,
-    ref: context.ref,
+    ref,
     path: file.path,
   });
 

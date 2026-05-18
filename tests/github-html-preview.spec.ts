@@ -57,6 +57,32 @@ describe("github-html-preview", () => {
     ).toBe("https://raw.githubusercontent.com/luvpame/demo/abc123/app/index.html");
   });
 
+  it("uses GitHub data-file-path containers and blob links when no global ref is available", async () => {
+    document.body.innerHTML = `
+      <div data-file-path="fixtures/html-preview-test.html">
+        <div class="file-header">
+          <a href="/luvpame/github-enhancer/blob/f9b1f23b6ae7d71860e2e09c9fbbab25408dad67/fixtures/html-preview-test.html">
+            fixtures/html-preview-test.html
+          </a>
+        </div>
+      </div>
+    `;
+    const fetchHtml = vi.fn().mockResolvedValue("<h1>Hello</h1>");
+
+    ensureHtmlPreviewButtons(document, {
+      owner: "luvpame",
+      repo: "github-enhancer",
+      fetchHtml,
+    });
+
+    document.querySelector<HTMLButtonElement>(`.${HTML_PREVIEW_BUTTON_CLASS}`)?.click();
+    await Promise.resolve();
+
+    expect(fetchHtml).toHaveBeenCalledWith(
+      "https://raw.githubusercontent.com/luvpame/github-enhancer/f9b1f23b6ae7d71860e2e09c9fbbab25408dad67/fixtures/html-preview-test.html",
+    );
+  });
+
   it("renders a sandboxed iframe after fetch succeeds", async () => {
     const fetchHtml = vi.fn().mockResolvedValue("<h1>Hello</h1>");
     ensureHtmlPreviewButtons(document, {

@@ -45,7 +45,7 @@ const applySettings = (settings: EnhancerSettings): void => {
 
   const repository = getRepositoryFromLocation(new URL(window.location.href));
   const ref = getHeadRef(document);
-  if (!repository || !ref) {
+  if (!repository) {
     return;
   }
 
