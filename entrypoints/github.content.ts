@@ -1,6 +1,10 @@
 import { defineContentScript } from "#imports";
 import { browser } from "wxt/browser";
 
+import {
+  ensureDevinRedirectButtons,
+  removeDevinRedirectButtons,
+} from "../lib/github-devin-redirect";
 import { ensureHtmlPreviewButtons, removeHtmlPreviews } from "../lib/github-html-preview";
 import { ensurePrCopyButtons, removePrCopyButtons } from "../lib/github-pr-copy";
 import { getExtensionSettings, type EnhancerSettings } from "../lib/settings";
@@ -33,6 +37,7 @@ interface PullRequestEmbeddedData {
 const BRANCH_LINK_SELECTOR = "a[class*='BranchName'][href*='/tree/']";
 const EMBEDDED_DATA_SELECTOR = "script[data-target='react-app.embeddedData']";
 const SHA2_SOURCE_SELECTOR = "[src*='sha2='], [action*='sha2=']";
+export const GITHUB_CONTENT_MATCHES = ["https://github.com/*"];
 
 export const getRepositoryFromLocation = (url: URL): RepositoryLocation | null => {
   if (url.hostname !== "github.com") {
@@ -110,7 +115,23 @@ export const getPullRequestHeadLocation = (doc: Document): PullRequestHeadLocati
   };
 };
 
-const applySettings = (settings: EnhancerSettings): void => {
+export const applySettings = (
+  settings: EnhancerSettings,
+  url: URL = new URL(window.location.href),
+): void => {
+  if (settings.devinRedirectEnabled) {
+    ensureDevinRedirectButtons();
+  } else {
+    removeDevinRedirectButtons();
+  }
+
+  const repository = getRepositoryFromLocation(url);
+  if (!repository) {
+    removePrCopyButtons();
+    removeHtmlPreviews();
+    return;
+  }
+
   if (settings.prCopyEnabled) {
     ensurePrCopyButtons();
   } else {
@@ -122,12 +143,7 @@ const applySettings = (settings: EnhancerSettings): void => {
     return;
   }
 
-  const repository = getRepositoryFromLocation(new URL(window.location.href));
   const headLocation = getPullRequestHeadLocation(document);
-  if (!repository) {
-    return;
-  }
-
   ensureHtmlPreviewButtons(document, { ...repository, ...headLocation });
 };
 
@@ -137,7 +153,7 @@ const applyFeatures = async (): Promise<void> => {
 };
 
 export default defineContentScript({
-  matches: ["https://github.com/*/*/pull/*"],
+  matches: GITHUB_CONTENT_MATCHES,
   main(ctx) {
     const refresh = () => {
       void applyFeatures();

@@ -1,12 +1,13 @@
 # Github Enhancer
 
-WXT-based Chrome extension that enhances GitHub pull request pages.
+WXT-based Chrome extension that enhances GitHub repository and pull request pages.
 
 ## Features
 
 - Adds `Title`, `Url`, and `Textlink` copy buttons to pull request titles
 - Adds `Preview HTML` buttons for changed `.html` files in pull requests
-- Provides popup toggles for PR copy and HTML preview
+- Adds DeepWiki, Devin Wiki, and Devin Review shortcuts to repository pages
+- Provides popup toggles for PR copy, HTML preview, and Devin redirect
 - Renders HTML previews in sandboxed iframes
 
 ## Requirements

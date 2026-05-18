@@ -39,6 +39,7 @@ describe("settings", () => {
     await expect(getSettings(storage)).resolves.toEqual({
       prCopyEnabled: true,
       htmlPreviewEnabled: false,
+      devinRedirectEnabled: true,
     });
   });
 
@@ -63,6 +64,7 @@ describe("settings", () => {
     await expect(getSettings(storage)).resolves.toEqual({
       prCopyEnabled: false,
       htmlPreviewEnabled: true,
+      devinRedirectEnabled: true,
     });
   });
 });

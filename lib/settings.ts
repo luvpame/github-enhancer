@@ -3,6 +3,7 @@ import { browser } from "wxt/browser";
 export interface EnhancerSettings {
   prCopyEnabled: boolean;
   htmlPreviewEnabled: boolean;
+  devinRedirectEnabled: boolean;
 }
 
 export interface SettingsStorage {
@@ -13,6 +14,7 @@ export interface SettingsStorage {
 export const DEFAULT_SETTINGS: EnhancerSettings = {
   prCopyEnabled: true,
   htmlPreviewEnabled: true,
+  devinRedirectEnabled: true,
 };
 
 const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof EnhancerSettings)[];
@@ -31,6 +33,7 @@ const getStoredBoolean = (
 export const mergeSettings = (stored: Record<string, unknown>): EnhancerSettings => ({
   prCopyEnabled: getStoredBoolean(stored, "prCopyEnabled"),
   htmlPreviewEnabled: getStoredBoolean(stored, "htmlPreviewEnabled"),
+  devinRedirectEnabled: getStoredBoolean(stored, "devinRedirectEnabled"),
 });
 
 export const getExtensionStorage = (

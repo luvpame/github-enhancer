@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import {
+  applySettings,
   createStorageChangeHandler,
+  GITHUB_CONTENT_MATCHES,
   getHeadRef,
   getPullRequestHeadLocation,
   getRepositoryFromLocation,
@@ -29,6 +31,26 @@ describe("github content helpers", () => {
     handler();
 
     expect(calls).toBe(1);
+  });
+
+  it("runs on GitHub repository pages beyond pull requests", () => {
+    expect(GITHUB_CONTENT_MATCHES).toEqual(["https://github.com/*"]);
+  });
+
+  it("does not add PR-only features outside pull request pages", () => {
+    document.body.innerHTML = "<main><h1><bdi>demo</bdi></h1></main>";
+
+    applySettings(
+      {
+        prCopyEnabled: true,
+        htmlPreviewEnabled: true,
+        devinRedirectEnabled: false,
+      },
+      new URL("https://github.com/luvpame/demo"),
+    );
+
+    expect(document.querySelector(".github-enhancer-pr-copy-actions")).toBeNull();
+    expect(document.querySelector(".github-enhancer-html-preview-button")).toBeNull();
   });
 
   it("extracts the pull request head ref from GitHub sha2 URLs", () => {

@@ -25,6 +25,11 @@ const TOGGLE_ITEMS: ToggleItem[] = [
     label: "HTML preview",
     description: "Add Preview HTML buttons to changed HTML files.",
   },
+  {
+    key: "devinRedirectEnabled",
+    label: "Devin redirect",
+    description: "Add DeepWiki and Devin Review shortcuts to GitHub repositories.",
+  },
 ];
 
 export const getToggleItems = (): ToggleItem[] => TOGGLE_ITEMS;
