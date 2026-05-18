@@ -19,6 +19,7 @@ export interface HtmlPreviewContext {
 export interface ChangedFile {
   element: HTMLElement;
   header: HTMLElement;
+  buttonTarget: HTMLElement;
   path: string;
   ref?: string;
 }
@@ -67,8 +68,11 @@ export const findChangedFiles = (doc: Document = document): ChangedFile[] => {
     const header =
       element.querySelector<HTMLElement>(".file-header") ??
       element.querySelector<HTMLElement>("[data-testid='file-header']");
+    const buttonTarget = header?.querySelector<HTMLElement>(".file-info .Truncate") ?? header;
 
-    return path && header ? [{ element, header, path, ref: getFileRef(element, path) }] : [];
+    return path && header && buttonTarget
+      ? [{ element, header, buttonTarget, path, ref: getFileRef(element, path) }]
+      : [];
   });
 };
 
@@ -184,7 +188,7 @@ export const ensureHtmlPreviewButtons = (
       continue;
     }
 
-    if (file.header.querySelector(`.${HTML_PREVIEW_BUTTON_CLASS}`)) {
+    if (file.buttonTarget.querySelector(`.${HTML_PREVIEW_BUTTON_CLASS}`)) {
       continue;
     }
 
@@ -196,7 +200,7 @@ export const ensureHtmlPreviewButtons = (
       void loadPreview(doc, file, previewContext);
     });
 
-    file.header.appendChild(button);
+    file.buttonTarget.appendChild(button);
   }
 };
 

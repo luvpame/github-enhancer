@@ -46,6 +46,34 @@ describe("github-html-preview", () => {
     expect(document.querySelectorAll(`.${HTML_PREVIEW_BUTTON_CLASS}`)).toHaveLength(1);
   });
 
+  it("places the preview button next to the file name when GitHub exposes a truncate header", () => {
+    document.body.innerHTML = `
+      <div data-file-path="fixtures/html-preview-test.html">
+        <div class="file-header">
+          <div class="file-info">
+            <span class="Truncate">
+              <a title="fixtures/html-preview-test.html" href="#diff-html">
+                fixtures/html-preview-test.html
+              </a>
+            </span>
+          </div>
+          <div class="file-actions"></div>
+        </div>
+      </div>
+    `;
+
+    ensureHtmlPreviewButtons(document, {
+      owner: "luvpame",
+      repo: "github-enhancer",
+      ref: "abc123",
+      fetchHtml: vi.fn(),
+    });
+
+    expect(
+      document.querySelector(`.file-info .Truncate > .${HTML_PREVIEW_BUTTON_CLASS}`),
+    ).not.toBeNull();
+  });
+
   it("builds raw GitHub URLs", () => {
     expect(
       buildRawUrl({
