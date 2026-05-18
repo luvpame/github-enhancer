@@ -10,7 +10,7 @@ export const manifest = {
   name: extensionName,
   description: extensionDescription,
   permissions: ["storage"],
-  host_permissions: ["https://github.com/*", "https://raw.githubusercontent.com/*"],
+  host_permissions: ["https://github.com/*"],
   icons: manifestIconPaths,
 };
 

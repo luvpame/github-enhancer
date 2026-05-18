@@ -14,7 +14,6 @@ describe("wxt config", () => {
     expect(manifest.description).toBe(extensionDescription);
     expect(manifest.icons).toMatchObject(manifestIconPaths);
     expect(manifest.permissions).toContain("storage");
-    expect(manifest.host_permissions).toContain("https://github.com/*");
-    expect(manifest.host_permissions).toContain("https://raw.githubusercontent.com/*");
+    expect(manifest.host_permissions).toEqual(["https://github.com/*"]);
   });
 });
