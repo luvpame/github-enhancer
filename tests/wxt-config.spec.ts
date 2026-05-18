@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import config, { manifest } from "../wxt.config";
 import {
+  devinRedirectIconPath,
   extensionDescription,
   extensionName,
   manifestIconPaths,
@@ -15,5 +16,11 @@ describe("wxt config", () => {
     expect(manifest.icons).toMatchObject(manifestIconPaths);
     expect(manifest.permissions).toContain("storage");
     expect(manifest.host_permissions).toEqual(["https://github.com/*"]);
+    expect(manifest.web_accessible_resources).toEqual([
+      {
+        resources: [devinRedirectIconPath],
+        matches: ["https://github.com/*"],
+      },
+    ]);
   });
 });

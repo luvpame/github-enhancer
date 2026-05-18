@@ -1,6 +1,7 @@
 export const extensionName = "Github Enhancer";
 export const extensionDescription =
   "Adds pull request copy, HTML preview, and Devin shortcuts to GitHub.";
+export const devinRedirectIconPath = "devin-redirect-icon.png";
 export const manifestIconPaths = {
   16: "icon/16.png",
   32: "icon/32.png",

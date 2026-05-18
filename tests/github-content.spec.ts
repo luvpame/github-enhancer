@@ -53,6 +53,21 @@ describe("github content helpers", () => {
     expect(document.querySelector(".github-enhancer-html-preview-button")).toBeNull();
   });
 
+  it("adds Devin redirect buttons on repository pages", () => {
+    document.body.innerHTML = "<main><h1><bdi>demo</bdi></h1></main>";
+
+    applySettings(
+      {
+        prCopyEnabled: false,
+        htmlPreviewEnabled: false,
+        devinRedirectEnabled: true,
+      },
+      new URL("https://github.com/luvpame/demo"),
+    );
+
+    expect(document.querySelector("[data-target='deepwiki']")?.textContent).toBe("DeepWiki");
+  });
+
   it("extracts the pull request head ref from GitHub sha2 URLs", () => {
     document.body.innerHTML = `
       <include-fragment src="/luvpame/demo/diffs?sha2=12322913653a4b271361ebac2d32cdcff27785c6"></include-fragment>

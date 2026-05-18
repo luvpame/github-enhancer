@@ -120,7 +120,7 @@ export const applySettings = (
   url: URL = new URL(window.location.href),
 ): void => {
   if (settings.devinRedirectEnabled) {
-    ensureDevinRedirectButtons();
+    ensureDevinRedirectButtons(document, url);
   } else {
     removeDevinRedirectButtons();
   }

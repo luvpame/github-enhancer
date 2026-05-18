@@ -1,6 +1,7 @@
 import { defineConfig } from "wxt";
 
 import {
+  devinRedirectIconPath,
   extensionDescription,
   extensionName,
   manifestIconPaths,
@@ -11,6 +12,12 @@ export const manifest = {
   description: extensionDescription,
   permissions: ["storage"],
   host_permissions: ["https://github.com/*"],
+  web_accessible_resources: [
+    {
+      resources: [devinRedirectIconPath],
+      matches: ["https://github.com/*"],
+    },
+  ],
   icons: manifestIconPaths,
 };
 

@@ -1,4 +1,9 @@
+import { browser } from "wxt/browser";
+
+import { devinRedirectIconPath } from "./github-enhancer-metadata";
+
 export const DEVIN_REDIRECT_CONTAINER_ID = "github-enhancer-devin-redirect";
+export const DEVIN_REDIRECT_ICON_PATH = devinRedirectIconPath;
 export const DEVIN_REDIRECT_STYLE_ID = "github-enhancer-devin-redirect-style";
 
 const ACTIONS_CLASS = "github-enhancer-devin-redirect-actions";
@@ -108,6 +113,7 @@ const ensureStyle = (doc: Document): void => {
       align-items: flex-end;
       gap: 10px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      transform-origin: bottom right;
     }
 
     #${DEVIN_REDIRECT_CONTAINER_ID}.${DEVIN_REDIRECT_CONTAINER_ID}-collapsed {
@@ -120,6 +126,8 @@ const ensureStyle = (doc: Document): void => {
       align-items: flex-end;
       gap: 8px;
       margin-bottom: 8px;
+      transform-origin: bottom right;
+      animation: github-enhancer-devin-menu-in 180ms ease-out;
     }
 
     #${DEVIN_REDIRECT_CONTAINER_ID}.${DEVIN_REDIRECT_CONTAINER_ID}-collapsed .${ACTIONS_CLASS} {
@@ -138,29 +146,96 @@ const ensureStyle = (doc: Document): void => {
       font-weight: 600;
       line-height: 1;
       box-shadow: 0 8px 20px rgba(31, 35, 40, 0.16);
+      transition:
+        background 140ms ease,
+        border-color 140ms ease,
+        box-shadow 140ms ease,
+        transform 140ms ease;
     }
 
     #${DEVIN_REDIRECT_CONTAINER_ID} .github-enhancer-devin-redirect-action {
       min-width: 132px;
       padding: 10px 12px;
       text-align: left;
+      animation: github-enhancer-devin-action-in 180ms ease-out both;
+    }
+
+    #${DEVIN_REDIRECT_CONTAINER_ID} .github-enhancer-devin-redirect-action:nth-child(2) {
+      animation-delay: 35ms;
     }
 
     #${DEVIN_REDIRECT_CONTAINER_ID} .github-enhancer-devin-redirect-toggle {
       width: 44px;
       height: 44px;
       padding: 0;
-      font-size: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transform-origin: center;
+    }
+
+    #${DEVIN_REDIRECT_CONTAINER_ID} .github-enhancer-devin-redirect-toggle img {
+      width: 32px;
+      height: 32px;
+      display: block;
+      transition: transform 180ms ease;
     }
 
     #${DEVIN_REDIRECT_CONTAINER_ID} button:hover {
       background: var(--bgColor-muted, #f6f8fa);
       border-color: var(--borderColor-emphasis, #818b98);
+      box-shadow: 0 12px 24px rgba(31, 35, 40, 0.2);
+      transform: translateY(-2px);
+    }
+
+    #${DEVIN_REDIRECT_CONTAINER_ID} button:active {
+      box-shadow: 0 4px 12px rgba(31, 35, 40, 0.18);
+      transform: translateY(0) scale(0.96);
+    }
+
+    #${DEVIN_REDIRECT_CONTAINER_ID} .github-enhancer-devin-redirect-toggle:hover img {
+      transform: rotate(-6deg) scale(1.06);
+    }
+
+    #${DEVIN_REDIRECT_CONTAINER_ID}.${DEVIN_REDIRECT_CONTAINER_ID}-expanded .github-enhancer-devin-redirect-toggle {
+      transform: rotate(4deg);
     }
 
     #${DEVIN_REDIRECT_CONTAINER_ID} button:focus-visible {
       outline: 2px solid var(--focus-outlineColor, #0969da);
       outline-offset: 2px;
+    }
+
+    @keyframes github-enhancer-devin-menu-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes github-enhancer-devin-action-in {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #${DEVIN_REDIRECT_CONTAINER_ID},
+      #${DEVIN_REDIRECT_CONTAINER_ID} *,
+      #${DEVIN_REDIRECT_CONTAINER_ID} *::before,
+      #${DEVIN_REDIRECT_CONTAINER_ID} *::after {
+        animation: none !important;
+        transition: none !important;
+      }
     }
   `;
 
@@ -198,6 +273,18 @@ const setExpanded = (container: HTMLElement, expanded: boolean): void => {
     ?.setAttribute("aria-expanded", String(expanded));
 };
 
+const getDevinIconUrl = (): string =>
+  browser.runtime?.getURL?.(DEVIN_REDIRECT_ICON_PATH) ?? DEVIN_REDIRECT_ICON_PATH;
+
+const createToggleIcon = (doc: Document): HTMLImageElement => {
+  const icon = doc.createElement("img");
+  icon.src = getDevinIconUrl();
+  icon.alt = "";
+  icon.setAttribute("aria-hidden", "true");
+
+  return icon;
+};
+
 const ensureToggleButton = (doc: Document, container: HTMLElement): void => {
   if (container.querySelector(TOGGLE_SELECTOR)) {
     return;
@@ -207,7 +294,7 @@ const ensureToggleButton = (doc: Document, container: HTMLElement): void => {
   button.type = "button";
   button.className = "github-enhancer-devin-redirect-toggle";
   button.dataset.role = TOGGLE_ROLE;
-  button.textContent = "D";
+  button.appendChild(createToggleIcon(doc));
   button.setAttribute("aria-label", "Toggle Devin shortcuts");
   button.setAttribute("aria-expanded", "false");
   button.addEventListener("click", () => {

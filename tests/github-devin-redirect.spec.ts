@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import {
   DEVIN_REDIRECT_CONTAINER_ID,
+  DEVIN_REDIRECT_ICON_PATH,
+  DEVIN_REDIRECT_STYLE_ID,
   buildDeepwikiUrl,
   buildDevinReviewUrl,
   buildDevinWikiUrl,
@@ -63,6 +65,38 @@ describe("github-devin-redirect", () => {
     expect(buttons.map((button) => button.textContent)).toEqual(["DeepWiki"]);
     expect(buttons[0]?.dataset.url).toBe("https://app.devin.ai/wiki/luvpame/demo");
     expect(document.querySelectorAll(`#${DEVIN_REDIRECT_CONTAINER_ID}`)).toHaveLength(1);
+  });
+
+  it("keeps redirect actions collapsed by default", () => {
+    ensureDevinRedirectButtons(document, new URL("https://github.com/luvpame/demo"));
+
+    const container = document.getElementById(DEVIN_REDIRECT_CONTAINER_ID);
+    expect(container?.dataset.expanded).toBe("false");
+    expect(container?.classList.contains(`${DEVIN_REDIRECT_CONTAINER_ID}-collapsed`)).toBe(true);
+    expect(container?.querySelector("[aria-expanded]")?.getAttribute("aria-expanded")).toBe(
+      "false",
+    );
+  });
+
+  it("uses the Devin icon for the toggle button", () => {
+    ensureDevinRedirectButtons(document, new URL("https://github.com/luvpame/demo"));
+
+    const toggleButton = document.querySelector<HTMLButtonElement>("[data-role='toggle']");
+    const icon = toggleButton?.querySelector<HTMLImageElement>("img");
+    expect(toggleButton?.textContent?.trim()).toBe("");
+    expect(toggleButton?.querySelector("svg")).toBeNull();
+    expect(icon?.src).toContain(DEVIN_REDIRECT_ICON_PATH);
+  });
+
+  it("adds motion styles for hover, click, and menu expansion", () => {
+    ensureDevinRedirectButtons(document, new URL("https://github.com/luvpame/demo/pull/123"));
+
+    const styleText = document.getElementById(DEVIN_REDIRECT_STYLE_ID)?.textContent ?? "";
+    expect(styleText).toContain("transition:");
+    expect(styleText).toContain("transform:");
+    expect(styleText).toContain("animation:");
+    expect(styleText).toContain("@keyframes github-enhancer-devin-action-in");
+    expect(styleText).toContain("@media (prefers-reduced-motion: reduce)");
   });
 
   it("adds Devin Review on pull request pages", () => {
