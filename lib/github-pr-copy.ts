@@ -23,6 +23,8 @@ export interface CopyButtonSpec {
 export const isTitleNoise = (text: string): boolean =>
   TITLE_NOISE_PATTERNS.some((pattern) => pattern.test(text));
 
+const getCleanText = (text: string | null | undefined): string => text?.trim() ?? "";
+
 export const getHeaderElement = (root: ParentNode = document): HTMLElement | null => {
   for (const selector of HEADER_SELECTORS) {
     const headerElement = root.querySelector(selector);
@@ -34,22 +36,33 @@ export const getHeaderElement = (root: ParentNode = document): HTMLElement | nul
   return null;
 };
 
-export const getTitleText = (headerElement: ParentNode): string => {
+const getTitleFromSelectors = (headerElement: ParentNode): string => {
   for (const selector of TITLE_SELECTORS) {
-    const titleElement = headerElement.querySelector(selector);
-    const titleText = titleElement?.textContent?.trim();
+    const titleText = getCleanText(headerElement.querySelector(selector)?.textContent);
     if (titleText && !isTitleNoise(titleText)) {
       return titleText;
     }
   }
 
-  const textNodes = Array.from(headerElement.childNodes)
-    .filter((node) => node.nodeType === Node.TEXT_NODE)
-    .map((node) => node.textContent?.trim() ?? "")
-    .filter(Boolean)
-    .filter((text) => !isTitleNoise(text));
+  return "";
+};
 
-  return textNodes.join(" ").trim();
+const getTitleFromTextNodes = (headerElement: ParentNode): string =>
+  Array.from(headerElement.childNodes)
+    .filter((node) => node.nodeType === Node.TEXT_NODE)
+    .map((node) => getCleanText(node.textContent))
+    .filter(Boolean)
+    .filter((text) => !isTitleNoise(text))
+    .join(" ")
+    .trim();
+
+export const getTitleText = (headerElement: ParentNode): string => {
+  const selectedTitle = getTitleFromSelectors(headerElement);
+  if (selectedTitle) {
+    return selectedTitle;
+  }
+
+  return getTitleFromTextNodes(headerElement);
 };
 
 export const sanitizeTitleForMarkdownLink = (title: string): string =>
@@ -140,6 +153,11 @@ const createActionsContainer = (doc: Document, title: string, url: string): HTML
   return container;
 };
 
+const isCurrentActionsContainer = (element: Element | null, title: string, url: string): boolean =>
+  element instanceof HTMLElement &&
+  element.dataset.copyTitle === title &&
+  element.dataset.copyUrl === url;
+
 export const ensurePrCopyButtons = (
   doc: Document = document,
   url: string = window.location.href,
@@ -157,11 +175,7 @@ export const ensurePrCopyButtons = (
   }
 
   const existingContainer = headerElement.querySelector(`.${ACTIONS_CONTAINER_CLASS}`);
-  const isReusableContainer =
-    existingContainer instanceof HTMLElement &&
-    existingContainer.dataset.copyTitle === title &&
-    existingContainer.dataset.copyUrl === url;
-  if (isReusableContainer) {
+  if (isCurrentActionsContainer(existingContainer, title, url)) {
     return false;
   }
 

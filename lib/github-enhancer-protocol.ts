@@ -16,7 +16,7 @@ interface RuntimeMessenger {
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && Object(value) === value;
+  typeof value === "object" && value !== null;
 
 export const createPingMessage = (): GithubEnhancerPingMessage => ({
   type: githubEnhancerPingType,

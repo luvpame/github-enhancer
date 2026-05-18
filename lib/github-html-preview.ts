@@ -117,43 +117,73 @@ const getFileBlobLink = (element: HTMLElement, path: string): HTMLAnchorElement 
     link.pathname.endsWith(`/${path}`),
   );
 
-export const findChangedFiles = (doc: Document = document): ChangedFile[] => {
+const getChangedFileHeader = (element: HTMLElement): HTMLElement | null => {
+  if (element.matches(REACT_DIFF_HEADER_SELECTOR)) {
+    return element;
+  }
+
+  return (
+    element.querySelector<HTMLElement>(".file-header") ??
+    element.querySelector<HTMLElement>("[data-testid='file-header']")
+  );
+};
+
+const getButtonTarget = (header: HTMLElement): HTMLElement =>
+  header.querySelector<HTMLElement>(".file-info .Truncate") ??
+  header.querySelector<HTMLElement>("[class*='file-path-section']") ??
+  header;
+
+const getFileElement = (element: HTMLElement): HTMLElement => {
+  if (!element.matches(REACT_DIFF_HEADER_SELECTOR)) {
+    return element;
+  }
+
+  return element.closest<HTMLElement>("[role='region']") ?? element;
+};
+
+const getPanelTarget = (element: HTMLElement, header: HTMLElement): HTMLElement => {
+  if (element.matches(REACT_DIFF_HEADER_SELECTOR)) {
+    return header;
+  }
+
+  return element;
+};
+
+const createChangedFile = (element: HTMLElement): ChangedFile | null => {
+  const path = getFilePath(element);
+  const header = getChangedFileHeader(element);
+  if (!path || !header) {
+    return null;
+  }
+
+  const fileElement = getFileElement(element);
+
+  return {
+    element: fileElement,
+    header,
+    buttonTarget: getButtonTarget(header),
+    panelTarget: getPanelTarget(element, header),
+    path,
+    ref: getFileRef(fileElement, path),
+    sourceUrl: getFileBlobUrl(fileElement, path),
+  };
+};
+
+const getChangedFileElements = (doc: Document): HTMLElement[] => {
   const elements = [
     ...FILE_SELECTORS.flatMap((selector) =>
       Array.from(doc.querySelectorAll<HTMLElement>(selector)),
     ),
     ...Array.from(doc.querySelectorAll<HTMLElement>(REACT_DIFF_HEADER_SELECTOR)),
   ];
-  const uniqueElements = [...new Set(elements)];
 
-  return uniqueElements.flatMap((element) => {
-    const path = getFilePath(element);
-    const header = element.matches(REACT_DIFF_HEADER_SELECTOR)
-      ? element
-      : (element.querySelector<HTMLElement>(".file-header") ??
-        element.querySelector<HTMLElement>("[data-testid='file-header']"));
-    const buttonTarget =
-      header?.querySelector<HTMLElement>(".file-info .Truncate") ??
-      header?.querySelector<HTMLElement>("[class*='file-path-section']") ??
-      header;
-    const panelTarget = element.matches(REACT_DIFF_HEADER_SELECTOR) ? header : element;
-    const fileElement = element.matches(REACT_DIFF_HEADER_SELECTOR)
-      ? (element.closest<HTMLElement>("[role='region']") ?? element)
-      : element;
+  return [...new Set(elements)];
+};
 
-    return path && header && buttonTarget
-      ? [
-          {
-            element: fileElement,
-            header,
-            buttonTarget,
-            panelTarget,
-            path,
-            ref: getFileRef(fileElement, path),
-            sourceUrl: getFileBlobUrl(fileElement, path),
-          },
-        ]
-      : [];
+export const findChangedFiles = (doc: Document = document): ChangedFile[] => {
+  return getChangedFileElements(doc).flatMap((element) => {
+    const file = createChangedFile(element);
+    return file ? [file] : [];
   });
 };
 
@@ -225,6 +255,24 @@ const insertPreviewPanel = (file: ChangedFile, panel: HTMLDivElement): void => {
   file.panelTarget.insertAdjacentElement("afterend", panel);
 };
 
+const resolvePreviewUrl = (file: ChangedFile, context: HtmlPreviewContext): string | null => {
+  if (file.sourceUrl) {
+    return buildRawUrlFromBlobUrl(file.sourceUrl);
+  }
+
+  const ref = context.ref ?? file.ref;
+  if (!ref) {
+    return null;
+  }
+
+  return buildRawUrl({
+    owner: context.sourceOwner ?? context.owner,
+    repo: context.sourceRepo ?? context.repo,
+    ref,
+    path: file.path,
+  });
+};
+
 const loadPreview = async (
   doc: Document,
   file: ChangedFile,
@@ -234,22 +282,10 @@ const loadPreview = async (
     return;
   }
 
-  const rawUrl = file.sourceUrl ? buildRawUrlFromBlobUrl(file.sourceUrl) : undefined;
-  const ref = context.ref ?? file.ref;
-
-  let previewUrl = rawUrl;
+  const previewUrl = resolvePreviewUrl(file, context);
   if (!previewUrl) {
-    if (!ref) {
-      insertPreviewPanel(file, renderMessage(doc, "Could not resolve HTML preview source."));
-      return;
-    }
-
-    previewUrl = buildRawUrl({
-      owner: context.sourceOwner ?? context.owner,
-      repo: context.sourceRepo ?? context.repo,
-      ref,
-      path: file.path,
-    });
+    insertPreviewPanel(file, renderMessage(doc, "Could not resolve HTML preview source."));
+    return;
   }
 
   try {
@@ -265,6 +301,25 @@ const loadPreview = async (
   }
 };
 
+const createPreviewButton = (
+  doc: Document,
+  file: ChangedFile,
+  context: HtmlPreviewContext & { fetchHtml: (url: string) => Promise<string> },
+): HTMLButtonElement => {
+  const button = doc.createElement("button");
+  button.type = "button";
+  button.textContent = "Preview HTML";
+  button.classList.add("btn", "btn-sm", HTML_PREVIEW_BUTTON_CLASS);
+  button.addEventListener("click", () => {
+    void loadPreview(doc, file, context);
+  });
+
+  return button;
+};
+
+const hasPreviewButton = (file: ChangedFile): boolean =>
+  file.buttonTarget.querySelector(`.${HTML_PREVIEW_BUTTON_CLASS}`) !== null;
+
 export const ensureHtmlPreviewButtons = (
   doc: Document = document,
   context: HtmlPreviewContext,
@@ -277,23 +332,11 @@ export const ensureHtmlPreviewButtons = (
   };
 
   for (const file of findChangedFiles(doc)) {
-    if (!file.path.endsWith(".html")) {
+    if (!file.path.endsWith(".html") || hasPreviewButton(file)) {
       continue;
     }
 
-    if (file.buttonTarget.querySelector(`.${HTML_PREVIEW_BUTTON_CLASS}`)) {
-      continue;
-    }
-
-    const button = doc.createElement("button");
-    button.type = "button";
-    button.textContent = "Preview HTML";
-    button.classList.add("btn", "btn-sm", HTML_PREVIEW_BUTTON_CLASS);
-    button.addEventListener("click", () => {
-      void loadPreview(doc, file, previewContext);
-    });
-
-    file.buttonTarget.appendChild(button);
+    file.buttonTarget.appendChild(createPreviewButton(doc, file, previewContext));
   }
 };
 

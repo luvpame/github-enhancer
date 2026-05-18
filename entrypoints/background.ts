@@ -24,15 +24,14 @@ export interface BackgroundApi {
   };
 }
 
+type MessageHandler = (
+  message: unknown,
+  sender: unknown,
+  sendResponse: (response: GithubEnhancerPongMessage) => void,
+) => boolean | undefined;
+
 export const createMessageHandler =
-  (
-    browserName: string,
-    manifestVersion: number,
-  ): ((
-    message: unknown,
-    sender: unknown,
-    sendResponse: (response: GithubEnhancerPongMessage) => void,
-  ) => boolean | undefined) =>
+  (browserName: string, manifestVersion: number): MessageHandler =>
   (message, _sender, sendResponse) => {
     if (!isPingMessage(message)) {
       return undefined;

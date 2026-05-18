@@ -30,13 +30,21 @@ interface PullRequestEmbeddedData {
   };
 }
 
+const BRANCH_LINK_SELECTOR = "a[class*='BranchName'][href*='/tree/']";
+const EMBEDDED_DATA_SELECTOR = "script[data-target='react-app.embeddedData']";
+const SHA2_SOURCE_SELECTOR = "[src*='sha2='], [action*='sha2=']";
+
 export const getRepositoryFromLocation = (url: URL): RepositoryLocation | null => {
   if (url.hostname !== "github.com") {
     return null;
   }
 
   const [owner, repo, section, pullNumber] = url.pathname.split("/").filter(Boolean);
-  return owner && repo && section === "pull" && pullNumber ? { owner, repo, pullNumber } : null;
+  if (!owner || !repo || section !== "pull" || !pullNumber) {
+    return null;
+  }
+
+  return { owner, repo, pullNumber };
 };
 
 export const createStorageChangeHandler = (refresh: () => void): (() => void) => refresh;
@@ -50,9 +58,7 @@ const getSha2FromUrl = (url: string): string | null => {
 };
 
 const getPullRequestEmbeddedData = (doc: Document): PullRequestEmbeddedData | null => {
-  const embeddedData = doc.querySelector<HTMLScriptElement>(
-    "script[data-target='react-app.embeddedData']",
-  )?.textContent;
+  const embeddedData = doc.querySelector<HTMLScriptElement>(EMBEDDED_DATA_SELECTOR)?.textContent;
   if (!embeddedData) {
     return null;
   }
@@ -67,6 +73,17 @@ const getPullRequestEmbeddedData = (doc: Document): PullRequestEmbeddedData | nu
 const getEmbeddedPullRequest = (doc: Document) =>
   getPullRequestEmbeddedData(doc)?.payload?.pullRequestsLayoutRoute?.pullRequest;
 
+const getBranchLinks = (doc: Document): HTMLAnchorElement[] =>
+  Array.from(doc.querySelectorAll<HTMLAnchorElement>(BRANCH_LINK_SELECTOR));
+
+const getHeadBranchLink = (doc: Document): HTMLAnchorElement | undefined =>
+  getBranchLinks(doc).at(-1);
+
+const getSha2Candidates = (doc: Document): (string | null)[] =>
+  Array.from(doc.querySelectorAll<HTMLElement>(SHA2_SOURCE_SELECTOR)).map((element) =>
+    getSha2FromUrl(element.getAttribute("src") ?? element.getAttribute("action") ?? ""),
+  );
+
 export const getHeadRef = (doc: Document): string | null => {
   const pullRequest = getEmbeddedPullRequest(doc);
   const candidates = [
@@ -74,13 +91,8 @@ export const getHeadRef = (doc: Document): string | null => {
     doc.querySelector<HTMLElement>("[data-head-sha]")?.dataset.headSha,
     doc.querySelector<HTMLMetaElement>("meta[name='octolytics-dimension-head_sha']")?.content,
     doc.querySelector<HTMLElement>(".commit-ref.head-ref")?.textContent?.trim(),
-    Array.from(doc.querySelectorAll<HTMLAnchorElement>("a[class*='BranchName'][href*='/tree/']"))
-      .at(-1)
-      ?.textContent?.trim(),
-    ...Array.from(doc.querySelectorAll<HTMLElement>("[src*='sha2='], [action*='sha2=']")).map(
-      (element) =>
-        getSha2FromUrl(element.getAttribute("src") ?? element.getAttribute("action") ?? ""),
-    ),
+    getHeadBranchLink(doc)?.textContent?.trim(),
+    ...getSha2Candidates(doc),
   ];
 
   return candidates.find((candidate) => candidate && candidate.length > 0) ?? null;
@@ -88,9 +100,7 @@ export const getHeadRef = (doc: Document): string | null => {
 
 export const getPullRequestHeadLocation = (doc: Document): PullRequestHeadLocation => {
   const pullRequest = getEmbeddedPullRequest(doc);
-  const headLink = Array.from(
-    doc.querySelectorAll<HTMLAnchorElement>("a[class*='BranchName'][href*='/tree/']"),
-  ).at(-1);
+  const headLink = getHeadBranchLink(doc);
   const [, sourceOwner, sourceRepo] = headLink?.pathname.match(/^\/([^/]+)\/([^/]+)\/tree\//) ?? [];
 
   return {

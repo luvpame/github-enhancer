@@ -12,6 +12,8 @@ import {
   removeHtmlPreviews,
 } from "../lib/github-html-preview";
 
+const PREVIEW_BUTTON_SELECTOR = `.${HTML_PREVIEW_BUTTON_CLASS}`;
+
 const createFilesDocument = () => {
   document.body.innerHTML = `
     <div data-testid="file" data-file-path="app/index.html">
@@ -25,6 +27,14 @@ const createFilesDocument = () => {
       </div>
     </div>
   `;
+};
+
+const clickPreviewButton = () => {
+  document.querySelector<HTMLButtonElement>(PREVIEW_BUTTON_SELECTOR)?.click();
+};
+
+const waitForPreview = async () => {
+  await Promise.resolve();
 };
 
 describe("github-html-preview", () => {
@@ -47,7 +57,7 @@ describe("github-html-preview", () => {
       fetchHtml: vi.fn(),
     });
 
-    expect(document.querySelectorAll(`.${HTML_PREVIEW_BUTTON_CLASS}`)).toHaveLength(1);
+    expect(document.querySelectorAll(PREVIEW_BUTTON_SELECTOR)).toHaveLength(1);
   });
 
   it("places the preview button next to the file name when GitHub exposes a truncate header", () => {
@@ -74,7 +84,7 @@ describe("github-html-preview", () => {
     });
 
     expect(
-      document.querySelector(`.file-info .Truncate > .${HTML_PREVIEW_BUTTON_CLASS}`),
+      document.querySelector(`.file-info .Truncate > ${PREVIEW_BUTTON_SELECTOR}`),
     ).not.toBeNull();
   });
 
@@ -110,7 +120,7 @@ describe("github-html-preview", () => {
     });
 
     expect(
-      document.querySelector(`[class*="file-path-section"] > .${HTML_PREVIEW_BUTTON_CLASS}`),
+      document.querySelector(`[class*="file-path-section"] > ${PREVIEW_BUTTON_SELECTOR}`),
     ).not.toBeNull();
   });
 
@@ -140,8 +150,8 @@ describe("github-html-preview", () => {
       fetchHtml,
     });
 
-    document.querySelector<HTMLButtonElement>(`.${HTML_PREVIEW_BUTTON_CLASS}`)?.click();
-    await Promise.resolve();
+    clickPreviewButton();
+    await waitForPreview();
 
     const header = document.querySelector<HTMLElement>("[data-diff-header-wrapper='true']");
     expect(header?.nextElementSibling?.classList.contains(HTML_PREVIEW_PANEL_CLASS)).toBe(true);
@@ -238,8 +248,8 @@ describe("github-html-preview", () => {
       fetchHtml,
     });
 
-    document.querySelector<HTMLButtonElement>(`.${HTML_PREVIEW_BUTTON_CLASS}`)?.click();
-    await Promise.resolve();
+    clickPreviewButton();
+    await waitForPreview();
 
     expect(fetchHtml).toHaveBeenCalledWith(
       "https://github.com/luvpame/github-enhancer/raw/f9b1f23b6ae7d71860e2e09c9fbbab25408dad67/fixtures/html-preview-test.html",
@@ -271,8 +281,8 @@ describe("github-html-preview", () => {
       fetchHtml,
     });
 
-    document.querySelector<HTMLButtonElement>(`.${HTML_PREVIEW_BUTTON_CLASS}`)?.click();
-    await Promise.resolve();
+    clickPreviewButton();
+    await waitForPreview();
 
     expect(fetchHtml).toHaveBeenCalledWith(
       "https://github.com/luvpame/github-enhancer/raw/12322913653a4b271361ebac2d32cdcff27785c6/fixtures/html-preview-test.html",
@@ -288,8 +298,8 @@ describe("github-html-preview", () => {
       fetchHtml,
     });
 
-    document.querySelector<HTMLButtonElement>(`.${HTML_PREVIEW_BUTTON_CLASS}`)?.click();
-    await Promise.resolve();
+    clickPreviewButton();
+    await waitForPreview();
 
     const iframe = document.querySelector<HTMLIFrameElement>("iframe");
     expect(iframe?.getAttribute("sandbox")).toBe("");
@@ -308,8 +318,8 @@ describe("github-html-preview", () => {
       fetchHtml,
     });
 
-    document.querySelector<HTMLButtonElement>(`.${HTML_PREVIEW_BUTTON_CLASS}`)?.click();
-    await Promise.resolve();
+    clickPreviewButton();
+    await waitForPreview();
 
     expect(fetchHtml).toHaveBeenCalledWith(
       "https://github.com/head-owner/head-repo/raw/refs/heads/feature/html-preview/app/index.html",
@@ -343,7 +353,7 @@ describe("github-html-preview", () => {
       ref: "abc123",
     });
 
-    document.querySelector<HTMLButtonElement>(`.${HTML_PREVIEW_BUTTON_CLASS}`)?.click();
+    clickPreviewButton();
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -368,8 +378,8 @@ describe("github-html-preview", () => {
       fetchHtml,
     });
 
-    document.querySelector<HTMLButtonElement>(`.${HTML_PREVIEW_BUTTON_CLASS}`)?.click();
-    await Promise.resolve();
+    clickPreviewButton();
+    await waitForPreview();
 
     expect(document.querySelector(`.${HTML_PREVIEW_PANEL_CLASS}`)?.textContent).toContain(
       "Could not load HTML preview",
@@ -386,7 +396,7 @@ describe("github-html-preview", () => {
 
     removeHtmlPreviews(document);
 
-    expect(document.querySelector(`.${HTML_PREVIEW_BUTTON_CLASS}`)).toBeNull();
+    expect(document.querySelector(PREVIEW_BUTTON_SELECTOR)).toBeNull();
     expect(document.querySelector(`.${HTML_PREVIEW_PANEL_CLASS}`)).toBeNull();
   });
 });

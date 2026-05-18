@@ -14,7 +14,7 @@ interface ToggleItem {
   description: string;
 }
 
-export const getToggleItems = (): ToggleItem[] => [
+const TOGGLE_ITEMS: ToggleItem[] = [
   {
     key: "prCopyEnabled",
     label: "PR copy",
@@ -26,6 +26,8 @@ export const getToggleItems = (): ToggleItem[] => [
     description: "Add Preview HTML buttons to changed HTML files.",
   },
 ];
+
+export const getToggleItems = (): ToggleItem[] => TOGGLE_ITEMS;
 
 const App = () => {
   const [settings, setSettings] = useState<EnhancerSettings>(DEFAULT_SETTINGS);

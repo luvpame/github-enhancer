@@ -19,13 +19,18 @@ const SETTING_KEYS = Object.keys(DEFAULT_SETTINGS) as (keyof EnhancerSettings)[]
 
 const isBoolean = (value: unknown): value is boolean => typeof value === "boolean";
 
+const getStoredBoolean = (
+  stored: Record<string, unknown>,
+  key: keyof EnhancerSettings,
+): boolean => {
+  const value = stored[key];
+
+  return isBoolean(value) ? value : DEFAULT_SETTINGS[key];
+};
+
 export const mergeSettings = (stored: Record<string, unknown>): EnhancerSettings => ({
-  prCopyEnabled: isBoolean(stored.prCopyEnabled)
-    ? stored.prCopyEnabled
-    : DEFAULT_SETTINGS.prCopyEnabled,
-  htmlPreviewEnabled: isBoolean(stored.htmlPreviewEnabled)
-    ? stored.htmlPreviewEnabled
-    : DEFAULT_SETTINGS.htmlPreviewEnabled,
+  prCopyEnabled: getStoredBoolean(stored, "prCopyEnabled"),
+  htmlPreviewEnabled: getStoredBoolean(stored, "htmlPreviewEnabled"),
 });
 
 export const getSettings = async (
