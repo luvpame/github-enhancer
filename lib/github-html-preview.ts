@@ -20,6 +20,7 @@ export interface ChangedFile {
   element: HTMLElement;
   header: HTMLElement;
   buttonTarget: HTMLElement;
+  panelTarget: HTMLElement;
   path: string;
   ref?: string;
 }
@@ -83,12 +84,22 @@ export const findChangedFiles = (doc: Document = document): ChangedFile[] => {
       header?.querySelector<HTMLElement>(".file-info .Truncate") ??
       header?.querySelector<HTMLElement>("[class*='file-path-section']") ??
       header;
+    const panelTarget = element.matches(REACT_DIFF_HEADER_SELECTOR) ? header : element;
     const fileElement = element.matches(REACT_DIFF_HEADER_SELECTOR)
       ? (element.closest<HTMLElement>("[role='region']") ?? element)
       : element;
 
     return path && header && buttonTarget
-      ? [{ element: fileElement, header, buttonTarget, path, ref: getFileRef(element, path) }]
+      ? [
+          {
+            element: fileElement,
+            header,
+            buttonTarget,
+            panelTarget,
+            path,
+            ref: getFileRef(element, path),
+          },
+        ]
       : [];
   });
 };
@@ -157,6 +168,10 @@ const toggleExistingPanel = (fileElement: HTMLElement): boolean => {
   return true;
 };
 
+const insertPreviewPanel = (file: ChangedFile, panel: HTMLDivElement): void => {
+  file.panelTarget.insertAdjacentElement("afterend", panel);
+};
+
 const loadPreview = async (
   doc: Document,
   file: ChangedFile,
@@ -168,7 +183,7 @@ const loadPreview = async (
 
   const ref = context.ref ?? file.ref;
   if (!ref) {
-    file.element.appendChild(renderMessage(doc, "Could not resolve HTML preview source."));
+    insertPreviewPanel(file, renderMessage(doc, "Could not resolve HTML preview source."));
     return;
   }
 
@@ -182,10 +197,10 @@ const loadPreview = async (
   try {
     const html = await context.fetchHtml(rawUrl);
     const panel = html ? renderIframe(doc, html) : renderMessage(doc, "HTML preview is empty.");
-    file.element.appendChild(panel);
+    insertPreviewPanel(file, panel);
   } catch (error: unknown) {
     console.error(error);
-    file.element.appendChild(renderMessage(doc, "Could not load HTML preview."));
+    insertPreviewPanel(file, renderMessage(doc, "Could not load HTML preview."));
   }
 };
 
