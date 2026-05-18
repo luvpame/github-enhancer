@@ -1,4 +1,5 @@
 import { defineContentScript } from "#imports";
+import { browser } from "wxt/browser";
 
 import { ensureHtmlPreviewButtons, removeHtmlPreviews } from "../lib/github-html-preview";
 import { ensurePrCopyButtons, removePrCopyButtons } from "../lib/github-pr-copy";
@@ -16,6 +17,10 @@ export const getRepositoryFromLocation = (url: URL): RepositoryLocation | null =
 
   const [owner, repo, section] = url.pathname.split("/").filter(Boolean);
   return owner && repo && section === "pull" ? { owner, repo } : null;
+};
+
+export const createStorageChangeHandler = (refresh: () => void) => (): void => {
+  refresh();
 };
 
 const getHeadRef = (doc: Document): string | null => {
@@ -69,8 +74,12 @@ export default defineContentScript({
     });
 
     ctx.addEventListener(window, "wxt:locationchange", refresh);
+    const handleStorageChange = createStorageChangeHandler(refresh);
+    browser.storage.onChanged.addListener(handleStorageChange);
+
     ctx.onInvalidated(() => {
       observer.disconnect();
+      browser.storage.onChanged.removeListener(handleStorageChange);
     });
 
     refresh();
