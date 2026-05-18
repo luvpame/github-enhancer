@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import {
   DEFAULT_SETTINGS,
+  getExtensionSettings,
+  getExtensionStorage,
   getSettings,
   mergeSettings,
   saveSettings,
@@ -42,6 +44,14 @@ describe("settings", () => {
 
   it("ignores non-boolean stored values", () => {
     expect(mergeSettings({ prCopyEnabled: "false" })).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it("returns no extension storage when unavailable", () => {
+    expect(getExtensionStorage(null)).toBeNull();
+  });
+
+  it("uses default settings when extension storage is unavailable", async () => {
+    await expect(getExtensionSettings(null)).resolves.toEqual(DEFAULT_SETTINGS);
   });
 
   it("saves partial settings", async () => {

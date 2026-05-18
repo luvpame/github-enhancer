@@ -33,14 +33,27 @@ export const mergeSettings = (stored: Record<string, unknown>): EnhancerSettings
   htmlPreviewEnabled: getStoredBoolean(stored, "htmlPreviewEnabled"),
 });
 
-export const getSettings = async (
-  storage: SettingsStorage = browser.storage.local,
-): Promise<EnhancerSettings> => mergeSettings(await storage.get(SETTING_KEYS));
+export const getExtensionStorage = (
+  storage: SettingsStorage | null | undefined = browser.storage?.local,
+): SettingsStorage | null => storage ?? null;
+
+export const getSettings = async (storage: SettingsStorage): Promise<EnhancerSettings> =>
+  mergeSettings(await storage.get(SETTING_KEYS));
 
 export const saveSettings = (
   storage: SettingsStorage,
   values: Partial<EnhancerSettings>,
 ): Promise<void> => storage.set(values);
 
-export const saveExtensionSettings = (values: Partial<EnhancerSettings>): Promise<void> =>
-  saveSettings(browser.storage.local, values);
+export const getExtensionSettings = async (
+  storage: SettingsStorage | null = getExtensionStorage(),
+): Promise<EnhancerSettings> => (storage ? getSettings(storage) : DEFAULT_SETTINGS);
+
+export const saveExtensionSettings = async (
+  values: Partial<EnhancerSettings>,
+  storage: SettingsStorage | null = getExtensionStorage(),
+): Promise<void> => {
+  if (storage) {
+    await saveSettings(storage, values);
+  }
+};

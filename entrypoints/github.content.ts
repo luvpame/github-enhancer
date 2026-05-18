@@ -3,7 +3,7 @@ import { browser } from "wxt/browser";
 
 import { ensureHtmlPreviewButtons, removeHtmlPreviews } from "../lib/github-html-preview";
 import { ensurePrCopyButtons, removePrCopyButtons } from "../lib/github-pr-copy";
-import { getSettings, type EnhancerSettings } from "../lib/settings";
+import { getExtensionSettings, type EnhancerSettings } from "../lib/settings";
 
 interface RepositoryLocation {
   owner: string;
@@ -132,7 +132,7 @@ const applySettings = (settings: EnhancerSettings): void => {
 };
 
 const applyFeatures = async (): Promise<void> => {
-  const settings = await getSettings();
+  const settings = await getExtensionSettings();
   applySettings(settings);
 };
 

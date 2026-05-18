@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { extensionDescription, extensionName } from "../../lib/github-enhancer-metadata";
 import {
   DEFAULT_SETTINGS,
-  getSettings,
+  getExtensionSettings,
   saveExtensionSettings,
   type EnhancerSettings,
 } from "../../lib/settings";
@@ -34,7 +34,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    void getSettings().then((nextSettings) => {
+    void getExtensionSettings().then((nextSettings) => {
       setSettings(nextSettings);
       setIsLoading(false);
     });
