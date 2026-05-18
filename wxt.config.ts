@@ -9,6 +9,8 @@ import {
 export const manifest = {
   name: extensionName,
   description: extensionDescription,
+  permissions: ["storage"],
+  host_permissions: ["https://github.com/*", "https://raw.githubusercontent.com/*"],
   icons: {
     16: manifestIconPath,
     32: manifestIconPath,

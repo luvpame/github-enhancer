@@ -18,7 +18,8 @@ describe("wxt config", () => {
       48: manifestIconPath,
       128: manifestIconPath,
     });
-    expect("permissions" in manifest).toBe(false);
-    expect("host_permissions" in manifest).toBe(false);
+    expect(manifest.permissions).toContain("storage");
+    expect(manifest.host_permissions).toContain("https://github.com/*");
+    expect(manifest.host_permissions).toContain("https://raw.githubusercontent.com/*");
   });
 });
