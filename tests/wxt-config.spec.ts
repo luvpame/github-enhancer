@@ -4,7 +4,7 @@ import config, { manifest } from "../wxt.config";
 import {
   extensionDescription,
   extensionName,
-  manifestIconPath,
+  manifestIconPaths,
 } from "../lib/github-enhancer-metadata";
 
 describe("wxt config", () => {
@@ -12,12 +12,7 @@ describe("wxt config", () => {
     expect(config.modules).toContain("@wxt-dev/module-react");
     expect(manifest.name).toBe(extensionName);
     expect(manifest.description).toBe(extensionDescription);
-    expect(manifest.icons).toMatchObject({
-      16: manifestIconPath,
-      32: manifestIconPath,
-      48: manifestIconPath,
-      128: manifestIconPath,
-    });
+    expect(manifest.icons).toMatchObject(manifestIconPaths);
     expect(manifest.permissions).toContain("storage");
     expect(manifest.host_permissions).toContain("https://github.com/*");
     expect(manifest.host_permissions).toContain("https://raw.githubusercontent.com/*");

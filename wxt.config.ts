@@ -3,7 +3,7 @@ import { defineConfig } from "wxt";
 import {
   extensionDescription,
   extensionName,
-  manifestIconPath,
+  manifestIconPaths,
 } from "./lib/github-enhancer-metadata";
 
 export const manifest = {
@@ -11,12 +11,7 @@ export const manifest = {
   description: extensionDescription,
   permissions: ["storage"],
   host_permissions: ["https://github.com/*", "https://raw.githubusercontent.com/*"],
-  icons: {
-    16: manifestIconPath,
-    32: manifestIconPath,
-    48: manifestIconPath,
-    128: manifestIconPath,
-  },
+  icons: manifestIconPaths,
 };
 
 const config = defineConfig({
