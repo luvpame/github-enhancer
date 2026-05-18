@@ -13,6 +13,8 @@ export interface HtmlPreviewContext {
   owner: string;
   repo: string;
   ref?: string;
+  sourceOwner?: string;
+  sourceRepo?: string;
   fetchHtml?: (url: string) => Promise<string>;
 }
 
@@ -23,22 +25,69 @@ export interface ChangedFile {
   panelTarget: HTMLElement;
   path: string;
   ref?: string;
+  sourceUrl?: string;
 }
 
 const FILE_SELECTORS = ["[data-file-path]", "[data-testid='file']", ".file"] as const;
 const REACT_DIFF_HEADER_SELECTOR = "[data-diff-header-wrapper='true']";
 
-const defaultFetchHtml = async (url: string): Promise<string> => {
-  const response = await fetch(url);
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const fetchText = async (url: string): Promise<string> => {
+  const response = await fetch(url, { credentials: "include" });
   if (!response.ok) {
-    throw new Error(`Failed to fetch HTML preview: ${response.status}`);
+    throw new Error(`Failed to fetch ${url}: ${response.status}`);
   }
 
   return response.text();
 };
 
+export const buildBlobUrlFromRawUrl = (url: string): string => url.replace("/raw/", "/blob/");
+
+export const extractHtmlFromBlobPage = (html: string): string => {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const embeddedData = doc.querySelector<HTMLScriptElement>(
+    "script[data-target='react-app.embeddedData']",
+  )?.textContent;
+  if (!embeddedData) {
+    return "";
+  }
+
+  const payload = JSON.parse(embeddedData) as {
+    payload?: { "codeViewBlobLayoutRoute.StyledBlob"?: { rawLines?: string[] } };
+  };
+  return payload.payload?.["codeViewBlobLayoutRoute.StyledBlob"]?.rawLines?.join("\n") ?? "";
+};
+
+const defaultFetchHtml = async (url: string): Promise<string> => {
+  try {
+    return await fetchText(url);
+  } catch (rawError) {
+    try {
+      const html = extractHtmlFromBlobPage(await fetchText(buildBlobUrlFromRawUrl(url)));
+      if (!html) {
+        throw new Error(`Could not extract raw lines from ${buildBlobUrlFromRawUrl(url)}`);
+      }
+
+      return html;
+    } catch (blobError) {
+      throw new Error(`${getErrorMessage(rawError)}; ${getErrorMessage(blobError)}`);
+    }
+  }
+};
+
 export const buildRawUrl = ({ owner, repo, ref, path }: RawUrlInput): string =>
-  `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`;
+  `https://github.com/${owner}/${repo}/raw/${getRawUrlRef(ref)}/${path}`;
+
+export const buildRawUrlFromBlobUrl = (url: string): string =>
+  new URL(url.replace("/blob/", "/raw/"), "https://github.com").href;
+
+const getRawUrlRef = (ref: string): string =>
+  /^[0-9a-f]{40}$/i.test(ref) || ref.startsWith("refs/") ? ref : `refs/heads/${ref}`;
+
+const getFileBlobUrl = (element: HTMLElement, path: string): string | undefined =>
+  getFileBlobLink(element, path)?.getAttribute("href") ?? undefined;
 
 const getFilePath = (element: HTMLElement): string => {
   const fromDataset = element.dataset.filePath;
@@ -57,13 +106,16 @@ const getFilePath = (element: HTMLElement): string => {
 };
 
 const getFileRef = (element: HTMLElement, path: string): string | undefined => {
-  const blobLink = Array.from(
-    element.querySelectorAll<HTMLAnchorElement>("a[href*='/blob/']"),
-  ).find((link) => link.pathname.endsWith(`/${path}`));
+  const blobLink = getFileBlobLink(element, path);
   const [, ref] = blobLink?.pathname.match(/\/blob\/([^/]+)\//) ?? [];
 
   return ref;
 };
+
+const getFileBlobLink = (element: HTMLElement, path: string): HTMLAnchorElement | undefined =>
+  Array.from(element.querySelectorAll<HTMLAnchorElement>("a[href*='/blob/']")).find((link) =>
+    link.pathname.endsWith(`/${path}`),
+  );
 
 export const findChangedFiles = (doc: Document = document): ChangedFile[] => {
   const elements = [
@@ -97,7 +149,8 @@ export const findChangedFiles = (doc: Document = document): ChangedFile[] => {
             buttonTarget,
             panelTarget,
             path,
-            ref: getFileRef(element, path),
+            ref: getFileRef(fileElement, path),
+            sourceUrl: getFileBlobUrl(fileElement, path),
           },
         ]
       : [];
@@ -181,26 +234,34 @@ const loadPreview = async (
     return;
   }
 
+  const rawUrl = file.sourceUrl ? buildRawUrlFromBlobUrl(file.sourceUrl) : undefined;
   const ref = context.ref ?? file.ref;
-  if (!ref) {
-    insertPreviewPanel(file, renderMessage(doc, "Could not resolve HTML preview source."));
-    return;
+
+  let previewUrl = rawUrl;
+  if (!previewUrl) {
+    if (!ref) {
+      insertPreviewPanel(file, renderMessage(doc, "Could not resolve HTML preview source."));
+      return;
+    }
+
+    previewUrl = buildRawUrl({
+      owner: context.sourceOwner ?? context.owner,
+      repo: context.sourceRepo ?? context.repo,
+      ref,
+      path: file.path,
+    });
   }
 
-  const rawUrl = buildRawUrl({
-    owner: context.owner,
-    repo: context.repo,
-    ref,
-    path: file.path,
-  });
-
   try {
-    const html = await context.fetchHtml(rawUrl);
+    const html = await context.fetchHtml(previewUrl);
     const panel = html ? renderIframe(doc, html) : renderMessage(doc, "HTML preview is empty.");
     insertPreviewPanel(file, panel);
   } catch (error: unknown) {
     console.error(error);
-    insertPreviewPanel(file, renderMessage(doc, "Could not load HTML preview."));
+    insertPreviewPanel(
+      file,
+      renderMessage(doc, `Could not load HTML preview: ${getErrorMessage(error)}`),
+    );
   }
 };
 
