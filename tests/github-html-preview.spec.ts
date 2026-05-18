@@ -74,6 +74,42 @@ describe("github-html-preview", () => {
     ).not.toBeNull();
   });
 
+  it("detects GitHub React diff headers", () => {
+    document.body.innerHTML = `
+      <div class="PullRequestDiffsList-module__diffEntry__djnVa">
+        <div role="region" id="diff-8452769c09dc819b72061899930d937ff7509025ab5a93fa30cedd5dd2da2ded">
+          <div data-diff-header-wrapper="true">
+            <div class="DiffFileHeader-module__diff-file-header__UuNN4">
+              <div class="DiffFileHeader-module__file-path-section__ZcmB1">
+                <h3 class="DiffFileHeader-module__file-name__VVXpg">
+                  <a href="#diff-8452769c09dc819b72061899930d937ff7509025ab5a93fa30cedd5dd2da2ded">
+                    <code>\u200Efixtures/html-preview-test.html\u200E</code>
+                  </a>
+                </h3>
+                <button type="button" aria-label="Copy file name to clipboard"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    expect(findChangedFiles(document).map((file) => file.path)).toEqual([
+      "fixtures/html-preview-test.html",
+    ]);
+
+    ensureHtmlPreviewButtons(document, {
+      owner: "luvpame",
+      repo: "github-enhancer",
+      ref: "abc123",
+      fetchHtml: vi.fn(),
+    });
+
+    expect(
+      document.querySelector(`[class*="file-path-section"] > .${HTML_PREVIEW_BUTTON_CLASS}`),
+    ).not.toBeNull();
+  });
+
   it("builds raw GitHub URLs", () => {
     expect(
       buildRawUrl({

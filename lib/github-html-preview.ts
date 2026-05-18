@@ -25,6 +25,7 @@ export interface ChangedFile {
 }
 
 const FILE_SELECTORS = ["[data-file-path]", "[data-testid='file']", ".file"] as const;
+const REACT_DIFF_HEADER_SELECTOR = "[data-diff-header-wrapper='true']";
 
 const defaultFetchHtml = async (url: string): Promise<string> => {
   const response = await fetch(url);
@@ -44,6 +45,12 @@ const getFilePath = (element: HTMLElement): string => {
     return fromDataset;
   }
 
+  const reactFileName = element.querySelector<HTMLElement>("[class*='file-name'] code");
+  const reactFileNameText = reactFileName?.textContent?.replaceAll("\u200E", "").trim();
+  if (reactFileNameText) {
+    return reactFileNameText;
+  }
+
   const titledLink = element.querySelector<HTMLElement>("[title]");
   return titledLink?.getAttribute("title")?.trim() ?? "";
 };
@@ -58,20 +65,30 @@ const getFileRef = (element: HTMLElement, path: string): string | undefined => {
 };
 
 export const findChangedFiles = (doc: Document = document): ChangedFile[] => {
-  const elements = FILE_SELECTORS.flatMap((selector) =>
-    Array.from(doc.querySelectorAll<HTMLElement>(selector)),
-  );
+  const elements = [
+    ...FILE_SELECTORS.flatMap((selector) =>
+      Array.from(doc.querySelectorAll<HTMLElement>(selector)),
+    ),
+    ...Array.from(doc.querySelectorAll<HTMLElement>(REACT_DIFF_HEADER_SELECTOR)),
+  ];
   const uniqueElements = [...new Set(elements)];
 
   return uniqueElements.flatMap((element) => {
     const path = getFilePath(element);
-    const header =
-      element.querySelector<HTMLElement>(".file-header") ??
-      element.querySelector<HTMLElement>("[data-testid='file-header']");
-    const buttonTarget = header?.querySelector<HTMLElement>(".file-info .Truncate") ?? header;
+    const header = element.matches(REACT_DIFF_HEADER_SELECTOR)
+      ? element
+      : (element.querySelector<HTMLElement>(".file-header") ??
+        element.querySelector<HTMLElement>("[data-testid='file-header']"));
+    const buttonTarget =
+      header?.querySelector<HTMLElement>(".file-info .Truncate") ??
+      header?.querySelector<HTMLElement>("[class*='file-path-section']") ??
+      header;
+    const fileElement = element.matches(REACT_DIFF_HEADER_SELECTOR)
+      ? (element.closest<HTMLElement>("[role='region']") ?? element)
+      : element;
 
     return path && header && buttonTarget
-      ? [{ element, header, buttonTarget, path, ref: getFileRef(element, path) }]
+      ? [{ element: fileElement, header, buttonTarget, path, ref: getFileRef(element, path) }]
       : [];
   });
 };
