@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { browser } from "wxt/browser";
 
-import { extensionDescription, extensionName } from "../../lib/template-metadata";
-import { pingBackground, type TemplatePongMessage } from "../../lib/template-protocol";
+import { extensionDescription, extensionName } from "../../lib/github-enhancer-metadata";
+import { pingBackground, type GithubEnhancerPongMessage } from "../../lib/github-enhancer-protocol";
 
 type PingState =
   | {
@@ -12,7 +12,7 @@ type PingState =
   | {
       status: "success";
       detail: string;
-      response: TemplatePongMessage;
+      response: GithubEnhancerPongMessage;
     }
   | {
       status: "error";
@@ -24,7 +24,7 @@ const initialState: PingState = {
   detail: "Use the button below to verify that popup and background are wired.",
 };
 
-const formatSuccess = (response: TemplatePongMessage): string =>
+const formatSuccess = (response: GithubEnhancerPongMessage): string =>
   `Connected to ${response.browser} (MV${response.manifestVersion}).`;
 
 const getErrorMessage = (error: unknown): string => {

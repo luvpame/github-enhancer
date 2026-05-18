@@ -1,6 +1,10 @@
 import { defineConfig } from "wxt";
 
-import { extensionDescription, extensionName, manifestIconPath } from "./lib/template-metadata";
+import {
+  extensionDescription,
+  extensionName,
+  manifestIconPath,
+} from "./lib/github-enhancer-metadata";
 
 export const manifest = {
   name: extensionName,

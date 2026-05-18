@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
 
 import config, { manifest } from "../wxt.config";
-import { extensionDescription, extensionName, manifestIconPath } from "../lib/template-metadata";
+import {
+  extensionDescription,
+  extensionName,
+  manifestIconPath,
+} from "../lib/github-enhancer-metadata";
 
 describe("wxt config", () => {
   it("keeps the template minimal while enabling React", () => {
