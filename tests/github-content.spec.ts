@@ -1,0 +1,120 @@
+import { describe, expect, it } from "vite-plus/test";
+
+import {
+  createStorageChangeHandler,
+  getHeadRef,
+  getPullRequestHeadLocation,
+  getRepositoryFromLocation,
+} from "../entrypoints/github.content";
+
+describe("github content helpers", () => {
+  it("extracts owner and repo from GitHub PR URLs", () => {
+    expect(getRepositoryFromLocation(new URL("https://github.com/luvpame/demo/pull/1"))).toEqual({
+      owner: "luvpame",
+      pullNumber: "1",
+      repo: "demo",
+    });
+  });
+
+  it("ignores non-PR URLs", () => {
+    expect(getRepositoryFromLocation(new URL("https://github.com/luvpame/demo"))).toBeNull();
+  });
+
+  it("creates a storage change handler that refreshes features", () => {
+    let calls = 0;
+    const handler = createStorageChangeHandler(() => {
+      calls += 1;
+    });
+
+    handler();
+
+    expect(calls).toBe(1);
+  });
+
+  it("extracts the pull request head ref from GitHub sha2 URLs", () => {
+    document.body.innerHTML = `
+      <include-fragment src="/luvpame/demo/diffs?sha2=12322913653a4b271361ebac2d32cdcff27785c6"></include-fragment>
+    `;
+
+    expect(getHeadRef(document)).toBe("12322913653a4b271361ebac2d32cdcff27785c6");
+  });
+
+  it("extracts the pull request head SHA from GitHub embedded data", () => {
+    document.body.innerHTML = `
+      <script type="application/json" data-target="react-app.embeddedData">
+        ${JSON.stringify({
+          payload: {
+            pullRequestsLayoutRoute: {
+              pullRequest: {
+                headBranch: "salvage0707/SGN-FY26-655",
+                headRepositoryName: "shogun",
+                headRepositoryOwnerLogin: "smartcamp",
+                headSha: "12322913653a4b271361ebac2d32cdcff27785c6",
+              },
+            },
+          },
+        })}
+      </script>
+    `;
+
+    expect(getHeadRef(document)).toBe("12322913653a4b271361ebac2d32cdcff27785c6");
+  });
+
+  it("extracts the pull request head branch from GitHub React branch links", () => {
+    document.body.innerHTML = `
+      <a class="PullRequestBranchName-module__branchName__SCtl2" href="/luvpame/demo/tree/main">
+        main
+      </a>
+      <a class="PullRequestBranchName-module__branchName__SCtl2" href="/luvpame/demo/tree/test/html-preview-pr">
+        test/html-preview-pr
+      </a>
+    `;
+
+    expect(getHeadRef(document)).toBe("test/html-preview-pr");
+  });
+
+  it("extracts the pull request head repo from GitHub React branch links", () => {
+    document.body.innerHTML = `
+      <a class="PullRequestBranchName-module__branchName__SCtl2" href="/base-owner/base-repo/tree/main">
+        main
+      </a>
+      <a class="PullRequestBranchName-module__branchName__SCtl2" href="/head-owner/head-repo/tree/feature/html-preview">
+        feature/html-preview
+      </a>
+    `;
+
+    expect(getPullRequestHeadLocation(document)).toEqual({
+      ref: "feature/html-preview",
+      sourceOwner: "head-owner",
+      sourceRepo: "head-repo",
+    });
+  });
+
+  it("extracts the pull request head repo from GitHub embedded data", () => {
+    document.body.innerHTML = `
+      <a class="PullRequestBranchName-module__branchName__SCtl2" href="/base-owner/base-repo/tree/main">
+        main
+      </a>
+      <script type="application/json" data-target="react-app.embeddedData">
+        ${JSON.stringify({
+          payload: {
+            pullRequestsLayoutRoute: {
+              pullRequest: {
+                headBranch: "salvage0707/SGN-FY26-655",
+                headRepositoryName: "shogun",
+                headRepositoryOwnerLogin: "smartcamp",
+                headSha: "12322913653a4b271361ebac2d32cdcff27785c6",
+              },
+            },
+          },
+        })}
+      </script>
+    `;
+
+    expect(getPullRequestHeadLocation(document)).toEqual({
+      ref: "12322913653a4b271361ebac2d32cdcff27785c6",
+      sourceOwner: "smartcamp",
+      sourceRepo: "shogun",
+    });
+  });
+});

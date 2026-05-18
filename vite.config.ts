@@ -8,9 +8,6 @@ export default defineConfig({
   plugins: [WxtVitest()],
   run: {
     tasks: {
-      init: {
-        command: "node --experimental-strip-types scripts/init.ts",
-      },
       dev: {
         command: "wxt",
       },
@@ -23,6 +20,7 @@ export default defineConfig({
     },
   },
   test: {
+    environment: "jsdom",
     include: ["tests/**/*.spec.ts"],
     exclude: [".output/**", ".wxt/**"],
   },

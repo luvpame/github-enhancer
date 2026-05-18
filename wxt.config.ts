@@ -1,16 +1,17 @@
 import { defineConfig } from "wxt";
 
-import { extensionDescription, extensionName, manifestIconPath } from "./lib/template-metadata";
+import {
+  extensionDescription,
+  extensionName,
+  manifestIconPaths,
+} from "./lib/github-enhancer-metadata";
 
 export const manifest = {
   name: extensionName,
   description: extensionDescription,
-  icons: {
-    16: manifestIconPath,
-    32: manifestIconPath,
-    48: manifestIconPath,
-    128: manifestIconPath,
-  },
+  permissions: ["storage"],
+  host_permissions: ["https://github.com/*", "https://raw.githubusercontent.com/*"],
+  icons: manifestIconPaths,
 };
 
 const config = defineConfig({

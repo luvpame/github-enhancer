@@ -1,11 +1,11 @@
 import { browser } from "wxt/browser";
 
-import { extensionName } from "../lib/template-metadata";
+import { extensionName } from "../lib/github-enhancer-metadata";
 import {
   createPongMessage,
   isPingMessage,
-  type TemplatePongMessage,
-} from "../lib/template-protocol";
+  type GithubEnhancerPongMessage,
+} from "../lib/github-enhancer-protocol";
 
 export interface BackgroundApi {
   runtime: {
@@ -17,22 +17,21 @@ export interface BackgroundApi {
         listener: (
           message: unknown,
           sender: unknown,
-          sendResponse: (response: TemplatePongMessage) => void,
+          sendResponse: (response: GithubEnhancerPongMessage) => void,
         ) => boolean | undefined,
       ) => void;
     };
   };
 }
 
+type MessageHandler = (
+  message: unknown,
+  sender: unknown,
+  sendResponse: (response: GithubEnhancerPongMessage) => void,
+) => boolean | undefined;
+
 export const createMessageHandler =
-  (
-    browserName: string,
-    manifestVersion: number,
-  ): ((
-    message: unknown,
-    sender: unknown,
-    sendResponse: (response: TemplatePongMessage) => void,
-  ) => boolean | undefined) =>
+  (browserName: string, manifestVersion: number): MessageHandler =>
   (message, _sender, sendResponse) => {
     if (!isPingMessage(message)) {
       return undefined;
