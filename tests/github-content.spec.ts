@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import {
   createStorageChangeHandler,
+  getHeadRef,
   getRepositoryFromLocation,
 } from "../entrypoints/github.content";
 
@@ -26,5 +27,13 @@ describe("github content helpers", () => {
     handler();
 
     expect(calls).toBe(1);
+  });
+
+  it("extracts the pull request head ref from GitHub sha2 URLs", () => {
+    document.body.innerHTML = `
+      <include-fragment src="/luvpame/demo/diffs?sha2=12322913653a4b271361ebac2d32cdcff27785c6"></include-fragment>
+    `;
+
+    expect(getHeadRef(document)).toBe("12322913653a4b271361ebac2d32cdcff27785c6");
   });
 });
