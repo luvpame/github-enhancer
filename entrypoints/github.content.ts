@@ -19,9 +19,7 @@ export const getRepositoryFromLocation = (url: URL): RepositoryLocation | null =
   return owner && repo && section === "pull" ? { owner, repo } : null;
 };
 
-export const createStorageChangeHandler = (refresh: () => void) => (): void => {
-  refresh();
-};
+export const createStorageChangeHandler = (refresh: () => void): (() => void) => refresh;
 
 const getHeadRef = (doc: Document): string | null => {
   const candidates = [

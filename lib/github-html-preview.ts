@@ -129,13 +129,18 @@ const toggleExistingPanel = (fileElement: HTMLElement): boolean => {
 const loadPreview = async (
   doc: Document,
   file: ChangedFile,
-  context: Required<HtmlPreviewContext>,
+  context: HtmlPreviewContext & { fetchHtml: (url: string) => Promise<string> },
 ): Promise<void> => {
   if (toggleExistingPanel(file.element)) {
     return;
   }
 
-  const rawUrl = buildRawUrl({ ...context, path: file.path });
+  const rawUrl = buildRawUrl({
+    owner: context.owner,
+    repo: context.repo,
+    ref: context.ref,
+    path: file.path,
+  });
 
   try {
     const html = await context.fetchHtml(rawUrl);
@@ -153,7 +158,7 @@ export const ensureHtmlPreviewButtons = (
 ): void => {
   ensureHtmlPreviewStyle(doc);
 
-  const previewContext: Required<HtmlPreviewContext> = {
+  const previewContext = {
     ...context,
     fetchHtml: context.fetchHtml ?? defaultFetchHtml,
   };
