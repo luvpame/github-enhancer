@@ -124,7 +124,7 @@ describe("github-html-preview", () => {
     ).not.toBeNull();
   });
 
-  it("renders React diff previews immediately after the header", async () => {
+  it("replaces React diff bodies with previews", async () => {
     document.body.innerHTML = `
       <div role="region">
         <div data-diff-header-wrapper="true">
@@ -136,7 +136,7 @@ describe("github-html-preview", () => {
             </h3>
           </div>
         </div>
-        <div class="border position-relative rounded-bottom-2">
+        <div class="border position-relative rounded-bottom-2" data-testid="diff-body">
           <table></table>
         </div>
       </div>
@@ -154,7 +154,43 @@ describe("github-html-preview", () => {
     await waitForPreview();
 
     const header = document.querySelector<HTMLElement>("[data-diff-header-wrapper='true']");
+    const diffBody = document.querySelector<HTMLElement>("[data-testid='diff-body']");
     expect(header?.nextElementSibling?.classList.contains(HTML_PREVIEW_PANEL_CLASS)).toBe(true);
+    expect(diffBody?.hidden).toBe(true);
+
+    clickPreviewButton();
+
+    expect(document.querySelector(`.${HTML_PREVIEW_PANEL_CLASS}`)).toBeNull();
+    expect(diffBody?.hidden).toBe(false);
+  });
+
+  it("replaces classic diff bodies with previews", async () => {
+    document.body.innerHTML = `
+      <div data-file-path="app/index.html">
+        <div class="file-header">
+          <a title="app/index.html" href="#diff-html">app/index.html</a>
+        </div>
+        <div class="js-file-content" data-testid="diff-body">
+          <table></table>
+        </div>
+      </div>
+    `;
+    const fetchHtml = vi.fn().mockResolvedValue("<h1>Hello</h1>");
+
+    ensureHtmlPreviewButtons(document, {
+      owner: "luvpame",
+      repo: "demo",
+      ref: "abc123",
+      fetchHtml,
+    });
+
+    clickPreviewButton();
+    await waitForPreview();
+
+    const header = document.querySelector<HTMLElement>(".file-header");
+    const diffBody = document.querySelector<HTMLElement>("[data-testid='diff-body']");
+    expect(header?.nextElementSibling?.classList.contains(HTML_PREVIEW_PANEL_CLASS)).toBe(true);
+    expect(diffBody?.hidden).toBe(true);
   });
 
   it("builds authenticated GitHub raw URLs", () => {

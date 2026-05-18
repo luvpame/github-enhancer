@@ -23,6 +23,7 @@ export interface ChangedFile {
   header: HTMLElement;
   buttonTarget: HTMLElement;
   panelTarget: HTMLElement;
+  viewTarget?: HTMLElement;
   path: string;
   ref?: string;
   sourceUrl?: string;
@@ -30,6 +31,8 @@ export interface ChangedFile {
 
 const FILE_SELECTORS = ["[data-file-path]", "[data-testid='file']", ".file"] as const;
 const REACT_DIFF_HEADER_SELECTOR = "[data-diff-header-wrapper='true']";
+const REPLACED_VIEW_CLASS = "github-enhancer-html-preview-replaced-view";
+const DIFF_BODY_SELECTOR = ".js-file-content, .blob-wrapper";
 
 const getErrorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
@@ -149,6 +152,24 @@ const getPanelTarget = (element: HTMLElement, header: HTMLElement): HTMLElement 
   return element;
 };
 
+const getViewTarget = (fileElement: HTMLElement, header: HTMLElement): HTMLElement | undefined => {
+  const nextElement = header.nextElementSibling;
+  if (!(nextElement instanceof HTMLElement)) {
+    return fileElement.querySelector<HTMLElement>(DIFF_BODY_SELECTOR) ?? undefined;
+  }
+
+  if (!nextElement.classList.contains(HTML_PREVIEW_PANEL_CLASS)) {
+    return nextElement;
+  }
+
+  const replacedNextElement = nextElement.nextElementSibling;
+  if (replacedNextElement instanceof HTMLElement) {
+    return replacedNextElement;
+  }
+
+  return fileElement.querySelector<HTMLElement>(DIFF_BODY_SELECTOR) ?? undefined;
+};
+
 const createChangedFile = (element: HTMLElement): ChangedFile | null => {
   const path = getFilePath(element);
   const header = getChangedFileHeader(element);
@@ -163,6 +184,7 @@ const createChangedFile = (element: HTMLElement): ChangedFile | null => {
     header,
     buttonTarget: getButtonTarget(header),
     panelTarget: getPanelTarget(element, header),
+    viewTarget: getViewTarget(fileElement, header),
     path,
     ref: getFileRef(fileElement, path),
     sourceUrl: getFileBlobUrl(fileElement, path),
@@ -241,18 +263,34 @@ const renderMessage = (doc: Document, message: string): HTMLDivElement => {
   return panel;
 };
 
-const toggleExistingPanel = (fileElement: HTMLElement): boolean => {
-  const existingPanel = fileElement.querySelector(`.${HTML_PREVIEW_PANEL_CLASS}`);
+const restoreViewTarget = (element: HTMLElement): void => {
+  element.hidden = false;
+  element.classList.remove(REPLACED_VIEW_CLASS);
+};
+
+const toggleExistingPanel = (file: ChangedFile): boolean => {
+  const existingPanel = file.element.querySelector(`.${HTML_PREVIEW_PANEL_CLASS}`);
   if (!(existingPanel instanceof HTMLElement)) {
     return false;
   }
 
   existingPanel.remove();
+  if (file.viewTarget) {
+    restoreViewTarget(file.viewTarget);
+  }
+
   return true;
 };
 
 const insertPreviewPanel = (file: ChangedFile, panel: HTMLDivElement): void => {
-  file.panelTarget.insertAdjacentElement("afterend", panel);
+  if (!file.viewTarget) {
+    file.panelTarget.insertAdjacentElement("afterend", panel);
+    return;
+  }
+
+  file.viewTarget.hidden = true;
+  file.viewTarget.classList.add(REPLACED_VIEW_CLASS);
+  file.viewTarget.insertAdjacentElement("beforebegin", panel);
 };
 
 const resolvePreviewUrl = (file: ChangedFile, context: HtmlPreviewContext): string | null => {
@@ -278,7 +316,7 @@ const loadPreview = async (
   file: ChangedFile,
   context: HtmlPreviewContext & { fetchHtml: (url: string) => Promise<string> },
 ): Promise<void> => {
-  if (toggleExistingPanel(file.element)) {
+  if (toggleExistingPanel(file)) {
     return;
   }
 
@@ -343,4 +381,9 @@ export const ensureHtmlPreviewButtons = (
 export const removeHtmlPreviews = (doc: Document = document): void => {
   doc.querySelectorAll(`.${HTML_PREVIEW_BUTTON_CLASS}`).forEach((element) => element.remove());
   doc.querySelectorAll(`.${HTML_PREVIEW_PANEL_CLASS}`).forEach((element) => element.remove());
+  doc.querySelectorAll(`.${REPLACED_VIEW_CLASS}`).forEach((element) => {
+    if (element instanceof HTMLElement) {
+      restoreViewTarget(element);
+    }
+  });
 };
